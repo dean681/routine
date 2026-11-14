@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="每日任務">
+<meta name="theme-color" content="#1F6F66">
+<title>每日任務</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#E9EFEE;--surface:#F7FAF9;--ink:#13302D;--muted:#5A716E;--line:#C5D3D0;--accent:#1F6F66;--on-accent:#fff;--gold:#E3A21A;--empty:#D3DFDC;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1C1B;--surface:#172827;--ink:#E4EFEC;--muted:#94ABA7;--line:#2B403D;--accent:#4FB8A9;--on-accent:#0F1C1B;--gold:#F0B93A;--empty:#243836;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1C1B;--surface:#172827;--ink:#E4EFEC;--muted:#94ABA7;--line:#2B403D;--accent:#4FB8A9;--on-accent:#0F1C1B;--gold:#F0B93A;--empty:#243836;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+main{max-width:560px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.25rem;margin:0 0 2px}h2{font-size:1rem;margin:26px 0 8px}
+.sub{color:var(--muted);font-size:.875rem;margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.points{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.points b{font-size:2.5rem;line-height:1}.points span{color:var(--muted)}
+.stamps{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:14px}
+.stamps i{aspect-ratio:1;border-radius:50%;background:var(--empty)}.stamps i.on{background:var(--gold)}
+button,.btn{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 14px;min-height:44px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700;width:100%}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.bar{height:8px;border-radius:4px;background:var(--empty);overflow:hidden;margin:8px 0 4px}.bar i{display:block;height:100%;background:var(--accent)}
+.slot{font-weight:700;margin:14px 0 2px}.slot:first-child{margin-top:0}
+.task{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:10px 2px}
+.task:last-child{border-bottom:0}
+.box{flex:none;min-width:26px;height:26px;border-radius:7px;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;margin-top:1px;padding:0 3px}
+.task.done .box{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.task.done .t{text-decoration:line-through;color:var(--muted)}
+.hint{display:block;font-size:.8125rem;color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}
+.row button{min-height:36px;padding:4px 12px}
+.empty{color:var(--muted);font-size:.875rem;margin:0}
+.log{font-size:.8125rem;color:var(--muted);margin:0;padding:0;list-style:none}
+.f{display:flex;gap:8px}.f input{flex:1;min-width:0}
+input,textarea{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+textarea{min-height:110px;font-size:.875rem}
+label{display:block;font-size:.875rem;font-weight:500;margin:14px 0 4px}
+pre{white-space:pre-wrap;font:inherit;margin:0}
+summary{cursor:pointer;font-weight:700;padding:6px 0}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+.ov .card{width:100%;max-width:380px;text-align:center}
+.res{font-size:1.5rem;font-weight:700;margin:14px 0 18px;min-height:2.4em;display:flex;align-items:center;justify-content:center}.res.roll{color:var(--muted)}
+.btns{display:grid;gap:8px}
+@media (prefers-reduced-motion:no-preference){.res.pop{animation:pop .3s ease-out}@keyframes pop{from{transform:scale(.85)}to{transform:scale(1)}}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const KEY='daily-quest-v2';
+const DEF={
+slots:'# 早\n早 8 起床\n吃早餐、點心、保健品\n英／日／新聞／複習（擇 2）|每天選 2 項|2\n# 午\n吃午餐、點心\n運動／伸展|二四六運動、一三五七伸展\n# 晚\n吃晚餐、點心\n日文一課\n# 睡前\n刷牙、牙線、漱口水\n洗澡\n12 點前睡|目標睡 7～9 小時\n記帳、量體重',
+notes:'目標：增重 0.25～0.5 kg／週，蛋白質 100 g／天，熱量 2600 大卡／天\n早：蛋 ×2 ＋ 豆漿\n點心：增肌粉\n午：（待補）\n點心：堅果、蛋白粉＋肌酸\n晚：拉麵定食\n點心：（待補）',
+basic:'專心看手機 30 分鐘\n含糖飲料\n餅乾\n糖果\n私人時間\n看一集影集',premium:'一件新衣服\n運動配件\n出去吃一頓好的\n出遊一天',
+th:80,wapp:'',done:{},drawn:{},points:0,stash:[],log:[],wb:{},pending:null,w:[],gd:{},bd:{},super:'想買很久的東西\n週末小旅行\n一整天想做什麼就做什麼',bonus:'額外運動 20 分鐘|1\n整理房間|1\n多讀書 30 分鐘|1',work:'# 週二 推\n臥推、肩推\n側平舉、三頭\n12×4，低重，力竭\n蛋白粉＋肌酸\n保健品\n# 週四 拉\n去健身房\n引體向上\n滑輪下拉\n划船、二頭\n12×4，低重，力竭\n蛋白粉＋肌酸\n保健品\n# 週六 腿\n深蹲、弓步、提踵\n羅馬尼亞硬舉\n12×4，低重，力竭\n蛋白粉＋肌酸\n保健品'};
+let S=JSON.parse(JSON.stringify(DEF));
+try{const r=localStorage.getItem(KEY);if(r)Object.assign(S,JSON.parse(r))}catch(e){}
+let rolling=false,armed=false;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const T=()=>ymd(new Date());
+const shift=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
+const weekDates=()=>{const off=(new Date().getDay()+6)%7;return[...Array(7)].map((_,i)=>shift(i-off))};
+const lines=s=>String(s).split('\n').map(x=>x.trim()).filter(Boolean);
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+const log=t=>{S.log.unshift({d:T(),t});S.log=S.log.slice(0,6)};
+function slots(){const o=[];lines(S.slots).forEach(l=>{if(l[0]==='#')o.push({n:l.replace(/^#\s*/,''),t:[]});else{if(!o.length)o.push({n:'任務',t:[]});const p=l.split('|');o[o.length-1].t.push({n:p[0].trim(),h:(p[1]||'').trim(),c:Math.max(1,parseInt(p[2])||1)})}});return o}
+const val=(day,n)=>{const v=(S.done[day]||{})[n];return v===true?1:(v||0)};
+function prog(day){let a=0,b=0;slots().forEach(s=>s.t.forEach(t=>{b+=t.c;a+=Math.min(val(day,t.n),t.c)}));return b?Math.round(a/b*100):0}
+const ok=day=>prog(day)>=S.th;
+function tap(n,c){
+ const d=T();S.done[d]=S.done[d]||{};const v=val(d,n);S.done[d][n]=v>=c?0:v+1;
+ const wd=weekDates();
+ if(!S.wb[wd[0]]&&wd.filter(ok).length>=5){S.wb[wd[0]]=1;S.points++;log('本週達標 5 天，+1 點')}
+ save();render();
+}
+function draw(){const L=lines(S.basic);if(!L.length||S.drawn[T()]||!ok(T()))return;S.drawn[T()]=1;S.pending={n:rand(L),k:'b'};rolling=true;save();render()}
+function premium(k){const c=k==='s'?60:30,L=lines(k==='s'?S.super:S.premium);if(S.points<c||!L.length)return;S.points-=c;S.pending={n:rand(L),k:k};rolling=true;save();render()}
+function tapW(i){const d=T();S.gd[d]=S.gd[d]||{};S.gd[d][i]=!S.gd[d][i];save();render()}
+function tapB(n,p){const d=T();S.bd[d]=S.bd[d]||{};if(S.bd[d][n]){S.bd[d][n]=0;S.points=Math.max(0,S.points-p)}else{S.bd[d][n]=1;S.points+=p;log('額外任務「'+n+'」+'+p+' 點')}save();render()}
+function todayW(){const ch='日一二三四五六'[new Date().getDay()];let cur=null,out=null;lines(S.work).forEach(l=>{if(l[0]==='#'){const t=l.replace(/^#\s*/,'');cur=t.includes('週'+ch)?{n:t,e:[]}:null;if(cur)out=cur}else if(cur)cur.e.push(l)});return out}
+function choose(a){const p=S.pending;if(!p)return;if(a==='point'){S.points++;log('「'+p.n+'」換成 1 點')}else{S.stash.push({n:p.n,d:T()});log('保留「'+p.n+'」')}S.pending=null;save();render()}
+function saveW(){const v=parseFloat(document.getElementById('wi').value);if(!(v>20&&v<300))return;S.w=S.w.filter(x=>x.d!==T());S.w.push({d:T(),kg:v});S.w.sort((a,b)=>a.d<b.d?-1:1);save();render()}
+const avg=(a,b)=>{const x=S.w.filter(e=>e.d>=shift(-a)&&e.d<=shift(-b));return x.length?x.reduce((s,e)=>s+e.kg,0)/x.length:null};
+function wText(){
+ if(!S.w.length)return '還沒有體重紀錄。';
+ const l=S.w[S.w.length-1],a=avg(6,0),p=avg(13,7);
+ let s='最新 '+l.kg+' kg（'+l.d+'）。';
+ if(a!=null)s+='近 7 天平均 '+a.toFixed(1)+' kg。';
+ if(a!=null&&p!=null){const d=a-p;s+='比前一週 '+(d>=0?'+':'')+d.toFixed(2)+' kg，目標 +0.25～0.5。'+(d<0.25?'還沒到目標，可以把點心份量加一點。':d>0.5?'增加得比目標快，維持就好。':'在目標範圍內。')}
+ return s}
+function saveSet(){
+ const g=id=>document.getElementById(id).value;
+ S.slots=g('s-slots');S.notes=g('s-notes');S.super=g('s-super');S.bonus=g('s-bonus');S.work=g('s-work');S.basic=g('s-basic');S.premium=g('s-premium');S.wapp=g('s-wapp').trim();
+ S.th=Math.min(100,Math.max(1,parseInt(g('s-th'))||80));save();render()}
+function render(){
+ const d=T(),pg=prog(d),drawn=!!S.drawn[d],pts=S.points,fill=Math.min(pts,30);
+ const wk=weekDates().filter(ok).length;
+ let h=`<h1>每日任務</h1><p class="sub">${d}　本週達標 ${wk} / 5 天</p>
+ <section class="card" style="margin-top:16px"><div class="points"><b>${pts}</b><span>點（高級 30／特級 60）</span></div>
+ <div class="stamps">${[...Array(30)].map((_,i)=>`<i class="${i<fill?'on':''}"></i>`).join('')}</div>
+ <div class="btns"><button class="main" data-a="premium"${pts>=30&&lines(S.premium).length?'':' disabled'}>${pts>=30?'抽高級獎勵（扣 30 點）':'再 '+(30-pts)+' 點可抽高級獎勵'}</button><button class="main" data-a="super"${pts>=60&&lines(S.super).length?'':' disabled'}>${pts>=60?'抽特級獎勵（扣 60 點）':'再 '+(60-pts)+' 點可抽特級獎勵'}</button></div></section>
+ <h2>今日任務　${pg}%</h2><section class="card"><div class="bar"><i style="width:${pg}%"></i></div><p class="sub">達到 ${S.th}% 就能抽今日獎勵</p>
+ ${slots().map(s=>`<div class="slot">${esc(s.n)}</div>`+s.t.map(t=>{const v=val(d,t.n),on=v>=t.c;return `<button class="task${on?' done':''}" data-t="${esc(t.n)}" data-c="${t.c}"><span class="box">${on?'✓':(t.c>1?v+'/'+t.c:'')}</span><span class="t">${esc(t.n)}${t.h?`<span class="hint">${esc(t.h)}</span>`:''}</span></button>`}).join('')).join('')||'<p class="empty">還沒有任務，請到設定新增。</p>'}</section>
+ <h2>今日訓練</h2><section class="card">${(()=>{const w=todayW(),g=S.gd[d]||{};return w?`<div class="slot">${esc(w.n)}</div>`+w.e.map((x,i)=>`<button class="task${g[i]?' done':''}" data-w="${i}"><span class="box">${g[i]?'✓':''}</span><span class="t">${esc(x)}</span></button>`).join(''):'<p class="empty">今天沒有訓練，做 10 分鐘伸展就好。</p>'})()}</section><h2>額外加點任務</h2><section class="card">${lines(S.bonus).map(l=>{const p=l.split('|'),n=p[0].trim(),pt=Math.max(1,parseInt(p[1])||1),on=(S.bd[d]||{})[n];return `<button class="task${on?' done':''}" data-b="${esc(n)}" data-p="${pt}"><span class="box">${on?'✓':''}</span><span class="t">${esc(n)}<span class="hint">+${pt} 點，每天可以再做一次</span></span></button>`}).join('')||'<p class="empty">還沒有額外任務，請到設定新增。</p>'}</section><h2>今日抽獎</h2><section class="card"><button class="main" data-a="draw"${ok(d)&&!drawn&&lines(S.basic).length?'':' disabled'}>${drawn?'今天已抽過，明天再來':ok(d)?'抽今日獎勵':'完成度達 '+S.th+'% 可抽'}</button></section>
+ <h2>體重</h2><section class="card"><div class="f"><input id="wi" type="number" step="0.1" inputmode="decimal" placeholder="今天的體重（kg）" aria-label="今天的體重"><button data-a="w">儲存</button></div>
+ <p class="sub" style="margin:10px 0">${wText()}</p>
+ ${S.wapp?`<a class="btn" href="${esc(S.wapp)}" target="_blank" rel="noopener">開啟體重 App</a>`:'<p class="sub">在設定填入體重 App 的連結，這裡就會出現開啟按鈕。</p>'}</section>
+ <h2>保留中的獎勵</h2><section class="card">${S.stash.length?S.stash.map((s,i)=>`<div class="row"><span>${esc(s.n)}<span class="hint">${s.d}</span></span><button data-use="${i}">使用</button></div>`).join(''):'<p class="empty">目前沒有保留的獎勵。</p>'}</section>
+ <h2>目標與飲食菜單</h2><section class="card"><pre>${esc(S.notes)}</pre></section>
+ ${S.log.length?`<h2>最近紀錄</h2><ul class="log">${S.log.map(l=>`<li>${l.d}　${esc(l.t)}</li>`).join('')}</ul>`:''}
+ <h2>設定</h2><section class="card"><details><summary>編輯任務、獎勵與其他</summary>
+ <label for="s-slots">任務（「#」開頭是時段；「|」後依序是提示、次數）</label><textarea id="s-slots" style="min-height:230px">${esc(S.slots)}</textarea>
+ <label for="s-basic">基本獎勵（每行一項）</label><textarea id="s-basic">${esc(S.basic)}</textarea>
+ <label for="s-premium">高級獎勵（每行一項）</label><textarea id="s-premium">${esc(S.premium)}</textarea>
+ <label for="s-super">特級獎勵（60 點，每行一項）</label><textarea id="s-super">${esc(S.super)}</textarea><label for="s-bonus">額外加點任務（每行一項，「|」後是點數）</label><textarea id="s-bonus">${esc(S.bonus)}</textarea><label for="s-work">健身菜單（「# 週二 推」是標題，底下每行一個動作）</label><textarea id="s-work" style="min-height:230px">${esc(S.work)}</textarea><label for="s-notes">目標與飲食菜單</label><textarea id="s-notes">${esc(S.notes)}</textarea>
+ <label for="s-th">抽獎門檻（完成度 %）</label><input id="s-th" type="number" min="1" max="100" value="${S.th}">
+ <label for="s-wapp">體重 App 連結</label><input id="s-wapp" value="${esc(S.wapp)}" placeholder="例如 x-apple-health://">
+ <div class="btns" style="margin-top:14px"><button class="main" data-a="set">儲存設定</button></div>
+ <label for="bk">備份與還原</label><textarea id="bk" placeholder="按「匯出」複製這段文字存起來；要還原時貼上再按「匯入」"></textarea>
+ <div class="btns" style="margin-top:8px"><button data-a="exp">匯出</button><button data-a="imp">匯入</button><button data-a="reset">${armed?'再按一次確認清除':'清除全部資料'}</button></div></details></section>
+ <p class="sub" style="margin-top:20px">資料只存在這個瀏覽器裡。漏掉一天不扣點。</p>`;
+ if(S.pending){const p=S.pending;h+=`<div class="ov"><div class="card" role="dialog" aria-modal="true"><div class="sub">${p.k==='s'?'特級獎勵':p.k==='p'?'高級獎勵':'今日獎勵'}</div><div class="res roll" id="res">抽獎中…</div><div class="btns" id="ob" hidden>${p.k!=='b'?'<button class="main" data-c2="keep">收下獎勵</button>':'<button class="main" data-c2="keep">保留獎勵</button><button data-c2="point">換成 1 點</button>'}</div></div></div>`}
+ const keep=['wi','s-slots','s-basic','s-premium','s-notes','s-th','s-wapp','bk'].map(i=>{const e=document.getElementById(i);return e&&e.value!==undefined?[i,e.value,document.activeElement===e]:null}).filter(Boolean);
+ const open=document.querySelector('details')&&document.querySelector('details').open;
+ app.innerHTML=h;
+ if(open)document.querySelector('details').open=true;
+ if(S.pending){const res=document.getElementById('res'),ob=document.getElementById('ob'),pool=lines(S.pending.k==='s'?S.super:S.pending.k==='p'?S.premium:S.basic);
+  const show=()=>{res.textContent=S.pending.n;res.className='res pop';ob.hidden=false};
+  if(rolling){rolling=false;let c=0;const iv=setInterval(()=>{res.textContent=rand(pool);if(++c>=9){clearInterval(iv);show()}},100)}else show()}
+}
+const app=document.getElementById('app');
+app.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.t)tap(b.dataset.t,+b.dataset.c);else if(b.dataset.w!==undefined)tapW(+b.dataset.w);else if(b.dataset.b!==undefined)tapB(b.dataset.b,+b.dataset.p);
+ else if(b.dataset.c2)choose(b.dataset.c2);
+ else if(b.dataset.use){const it=S.stash.splice(+b.dataset.use,1)[0];if(it)log('使用「'+it.n+'」');save();render()}
+ else{const a=b.dataset.a;
+  if(a==='draw')draw();else if(a==='premium')premium('p');else if(a==='super')premium('s');else if(a==='w')saveW();else if(a==='set')saveSet();
+  else if(a==='exp'){document.getElementById('bk').value=JSON.stringify(S)}
+  else if(a==='imp'){try{const o=JSON.parse(document.getElementById('bk').value);S=Object.assign(JSON.parse(JSON.stringify(DEF)),o);save();render()}catch(x){document.getElementById('bk').value='無法讀取，請確認貼上的是完整的匯出文字。'}}
+  else if(a==='reset'){if(!armed){armed=true;render();const dd=document.querySelector('details');if(dd)dd.open=true;return}S=JSON.parse(JSON.stringify(DEF));armed=false;save();render()}}
+});
+try{const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d');x.fillStyle='#1F6F66';x.fillRect(0,0,180,180);x.fillStyle='#E3A21A';x.beginPath();x.arc(90,90,56,0,7);x.fill();x.fillStyle='#fff';x.font='bold 70px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('✓',90,94);const l=document.createElement('link');l.rel='apple-touch-icon';l.href=c.toDataURL('image/png');document.head.appendChild(l)}catch(e){}
+render();
+</script>
+</body>
+</html>
